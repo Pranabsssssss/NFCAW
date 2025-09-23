@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="script.js" defer></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/gh/studio-freight/lenis@1.0.19/bundled/lenis.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body class="gradient-bg min-h-screen text-white">
+    <!-- Header -->
+    <header class="py-8 px-6">
+        <div class="max-w-7xl mx-auto">
+            <h1 class="text-4xl md:text-5xl font-bold text-center neon-text mb-2">
+                Student Attendance Dashboard
+            </h1>
+            <div class="w-32 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 mx-auto rounded-full neon-glow"></div>
+        </div>
+    </header>
+
+    <!-- Dashboard Content -->
+    <main class="px-6 pb-12">
+        <div class="max-w-7xl mx-auto">
+            <!-- Students Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
+                <!-- Student Card 1 -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 neon-border card-hover">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-xl font-semibold text-cyan-400">Student #1</h3>
+                            <button class="refresh-btn text-cyan-400 hover:text-cyan-300 transition-colors p-2 rounded-lg hover:bg-slate-700/50" title="Refresh student data">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="w-16 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"></div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <!-- Name -->
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">Name:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <!-- School ID -->
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">School ID:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <!-- This Month Attendance -->
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">This Month:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <!-- Overall Attendance -->
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">Overall:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <!-- Attendance Calendar -->
+                        <div class="pt-4">
+                            <h4 class="text-slate-300 font-medium mb-3">Attendance Calendar</h4>
+
+                            <!-- Month Slider -->
+                            <div class="flex items-center justify-between mb-4 bg-slate-900/50 rounded-lg p-3">
+                                <button class="month-prev text-cyan-400 hover:text-cyan-300 transition-colors p-1 rounded hover:bg-slate-800/50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 19l-7-7 7-7"></path>
+                                    </svg>
+                                </button>
+                                <span class="current-month text-white font-medium text-sm">January 2025</span>
+                                <button class="month-next text-cyan-400 hover:text-cyan-300 transition-colors p-1 rounded hover:bg-slate-800/50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Calendar Days -->
+                            <div class="calendar-container overflow-hidden bg-slate-900/50 rounded-lg p-4">
+                                <div class="calendar-grid grid grid-cols-7 gap-2 transition-transform duration-500 ease-in-out">
+                                    <!-- Days will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Card 2 -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 neon-border card-hover">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-xl font-semibold text-cyan-400">Student #2</h3>
+                            <button class="refresh-btn text-cyan-400 hover:text-cyan-300 transition-colors p-2 rounded-lg hover:bg-slate-700/50" title="Refresh student data">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="w-16 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"></div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">Name:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">School ID:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">This Month:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">Overall:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="pt-4">
+                            <h4 class="text-slate-300 font-medium mb-3">Attendance Calendar</h4>
+
+                            <!-- Month Slider -->
+                            <div class="flex items-center justify-between mb-4 bg-slate-900/50 rounded-lg p-3">
+                                <button class="month-prev text-cyan-400 hover:text-cyan-300 transition-colors p-1 rounded hover:bg-slate-800/50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 19l-7-7 7-7"></path>
+                                    </svg>
+                                </button>
+                                <span class="current-month text-white font-medium text-sm">January 2025</span>
+                                <button class="month-next text-cyan-400 hover:text-cyan-300 transition-colors p-1 rounded hover:bg-slate-800/50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Calendar Days -->
+                            <div class="calendar-container overflow-hidden bg-slate-900/50 rounded-lg p-4">
+                                <div class="calendar-grid grid grid-cols-7 gap-2 transition-transform duration-500 ease-in-out">
+                                    <!-- Days will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Card 3 -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 neon-border card-hover">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-xl font-semibold text-cyan-400">Student #3</h3>
+                            <button class="refresh-btn text-cyan-400 hover:text-cyan-300 transition-colors p-2 rounded-lg hover:bg-slate-700/50" title="Refresh student data">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="w-16 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"></div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">Name:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">School ID:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">This Month:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">Overall:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="pt-4">
+                            <h4 class="text-slate-300 font-medium mb-3">Attendance Calendar</h4>
+
+                            <!-- Month Slider -->
+                            <div class="flex items-center justify-between mb-4 bg-slate-900/50 rounded-lg p-3">
+                                <button class="month-prev text-cyan-400 hover:text-cyan-300 transition-colors p-1 rounded hover:bg-slate-800/50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 19l-7-7 7-7"></path>
+                                    </svg>
+                                </button>
+                                <span class="current-month text-white font-medium text-sm">January 2025</span>
+                                <button class="month-next text-cyan-400 hover:text-cyan-300 transition-colors p-1 rounded hover:bg-slate-800/50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Calendar Days -->
+                            <div class="calendar-container overflow-hidden bg-slate-900/50 rounded-lg p-4">
+                                <div class="calendar-grid grid grid-cols-7 gap-2 transition-transform duration-500 ease-in-out">
+                                    <!-- Days will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Card 4 -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 neon-border card-hover">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-xl font-semibold text-cyan-400">Student #4</h3>
+                            <button class="refresh-btn text-cyan-400 hover:text-cyan-300 transition-colors p-2 rounded-lg hover:bg-slate-700/50" title="Refresh student data">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="w-16 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"></div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">Name:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">School ID:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">This Month:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">Overall:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="pt-4">
+                            <h4 class="text-slate-300 font-medium mb-3">Attendance Calendar</h4>
+
+                            <!-- Month Slider -->
+                            <div class="flex items-center justify-between mb-4 bg-slate-900/50 rounded-lg p-3">
+                                <button class="month-prev text-cyan-400 hover:text-cyan-300 transition-colors p-1 rounded hover:bg-slate-800/50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 19l-7-7 7-7"></path>
+                                    </svg>
+                                </button>
+                                <span class="current-month text-white font-medium text-sm">January 2025</span>
+                                <button class="month-next text-cyan-400 hover:text-cyan-300 transition-colors p-1 rounded hover:bg-slate-800/50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Calendar Days -->
+                            <div class="calendar-container overflow-hidden bg-slate-900/50 rounded-lg p-4">
+                                <div class="calendar-grid grid grid-cols-7 gap-2 transition-transform duration-500 ease-in-out">
+                                    <!-- Days will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Student Card 5 -->
+                <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-6 neon-border card-hover">
+                    <div class="mb-6">
+                        <div class="flex justify-between items-center mb-2">
+                            <h3 class="text-xl font-semibold text-cyan-400">Student #5</h3>
+                            <button class="refresh-btn text-cyan-400 hover:text-cyan-300 transition-colors p-2 rounded-lg hover:bg-slate-700/50" title="Refresh student data">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="w-16 h-1 bg-gradient-to-r from-cyan-500 to-purple-500 rounded-full"></div>
+                    </div>
+
+                    <div class="space-y-4">
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">Name:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">School ID:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">This Month:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="flex justify-between items-center py-2 border-b border-slate-700/50">
+                            <span class="text-slate-300 font-medium">Overall:</span>
+                            <span class="text-white loading-shimmer px-3 py-1 rounded">-</span>
+                        </div>
+
+                        <div class="pt-4">
+                            <h4 class="text-slate-300 font-medium mb-3">Attendance Calendar</h4>
+
+                            <!-- Month Slider -->
+                            <div class="flex items-center justify-between mb-4 bg-slate-900/50 rounded-lg p-3">
+                                <button class="month-prev text-cyan-400 hover:text-cyan-300 transition-colors p-1 rounded hover:bg-slate-800/50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M15 19l-7-7 7-7"></path>
+                                    </svg>
+                                </button>
+                                <span class="current-month text-white font-medium text-sm">January 2025</span>
+                                <button class="month-next text-cyan-400 hover:text-cyan-300 transition-colors p-1 rounded hover:bg-slate-800/50">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9 5l7 7-7 7"></path>
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Calendar Days -->
+                            <div class="calendar-container overflow-hidden bg-slate-900/50 rounded-lg p-4">
+                                <div class="calendar-grid grid grid-cols-7 gap-2 transition-transform duration-500 ease-in-out">
+                                    <!-- Days will be populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Initialize Lenis smooth scrolling
+        const lenis = new Lenis({
+            duration: 1.2,
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+            direction: 'vertical',
+            gestureDirection: 'vertical',
+            smooth: true,
+            mouseMultiplier: 1,
+            smoothTouch: false,
+            touchMultiplier: 2,
+            infinite: false,
+        });
+
+        function raf(time) {
+            lenis.raf(time);
+            requestAnimationFrame(raf);
+        }
+
+        requestAnimationFrame(raf);
+
+        // Calendar functionality
+        let currentMonth = 0; // January = 0
+        let currentYear = 2025;
+
+        const months = [
+            'January', 'February', 'March', 'April', 'May', 'June',
+            'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+
+        const daysInMonth = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+        // Check for leap year
+        function isLeapYear(year) {
+            return (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0);
+        }
+
+        function getDaysInMonth(month, year) {
+            if (month === 1 && isLeapYear(year)) {
+                return 29;
+            }
+            return daysInMonth[month];
+        }
+
+        function generateCalendar(month, year) {
+            const days = getDaysInMonth(month, year);
+            const calendarHTML = [];
+
+            // All days default to absent (red) until data is loaded
+            for (let day = 1; day <= days; day++) {
+                calendarHTML.push(`
+                    <div class="day-block day-absent" title="Day ${day}: No data">
+                        <span class="text-xs">${day}</span>
+                    </div>
+                `);
+            }
+
+            return calendarHTML.join('');
+        }
+
+        function updateCalendar(animated = false) {
+            const calendarGrids = document.querySelectorAll('.calendar-grid');
+            const monthDisplays = document.querySelectorAll('.current-month');
+
+            // Update month display
+            monthDisplays.forEach(display => {
+                display.textContent = `${months[currentMonth]} ${currentYear}`;
+            });
+
+            // Generate new calendar content
+            const newCalendarHTML = generateCalendar(currentMonth, currentYear);
+
+            calendarGrids.forEach(grid => {
+                if (animated) {
+                    // Smooth fade and scale transition
+                    grid.classList.add('calendar-fade-out');
+                    setTimeout(() => {
+                        grid.innerHTML = newCalendarHTML;
+                        grid.classList.remove('calendar-fade-out');
+                        grid.classList.add('calendar-fade-in');
+                        setTimeout(() => {
+                            grid.classList.remove('calendar-fade-in');
+                        }, 300);
+                    }, 200);
+                } else {
+                    // Initial load, no animation
+                    grid.innerHTML = newCalendarHTML;
+                }
+            });
+        }
+
+        function initializeCalendars() {
+            // Add event listeners to all month navigation buttons
+            document.querySelectorAll('.month-prev').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentMonth--;
+                    if (currentMonth < 0) {
+                        currentMonth = 11;
+                        currentYear--;
+                    }
+                    updateCalendar(true);
+                });
+            });
+
+            document.querySelectorAll('.month-next').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    currentMonth++;
+                    if (currentMonth > 11) {
+                        currentMonth = 0;
+                        currentYear++;
+                    }
+                    updateCalendar(true);
+                });
+            });
+
+            // Initialize all calendars
+            updateCalendar(false);
+        }
+
+        // Initialize calendars when page loads
+        document.addEventListener('DOMContentLoaded', initializeCalendars);
+
+        // Refresh button functionality
+        function initializeRefreshButtons() {
+            document.querySelectorAll('.refresh-btn').forEach((btn, index) => {
+                btn.addEventListener('click', function() {
+                    const studentCard = this.closest('.bg-slate-800\\/50');
+                    const svg = this.querySelector('svg');
+                    const studentNumber = index + 1;
+
+                    // Add spinning animation
+                    svg.style.animation = 'spin 1s linear infinite';
+
+                    // Reset all data fields to loading state
+                    const dataFields = studentCard.querySelectorAll('.space-y-4 span:last-child');
+                    dataFields.forEach(field => {
+                        field.textContent = '-';
+                        field.classList.add('loading-shimmer');
+                    });
+
+                    // Reset calendar to loading state
+                    const calendarGrid = studentCard.querySelector('.calendar-grid');
+                    const days = getDaysInMonth(currentMonth, currentYear);
+                    let calendarHTML = '';
+                    for (let day = 1; day <= days; day++) {
+                        calendarHTML += `
+                            <div class="day-block day-absent" title="Day ${day}: Loading...">
+                                <span class="text-xs">${day}</span>
+                            </div>
+                        `;
+                    }
+                    calendarGrid.innerHTML = calendarHTML;
+
+                    // Call the refresh function (ready for your database integration)
+                    refreshStudentData(studentNumber, studentCard, svg, dataFields, calendarGrid);
+                });
+            });
+        }
+
+        // Add spin animation to CSS
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                from { transform: rotate(0deg); }
+                to { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // Initialize refresh buttons when page loads
+        document.addEventListener('DOMContentLoaded', initializeRefreshButtons);
+
+
+
+        // Function to refresh individual student data (ready for your database integration)
+        function refreshStudentData(studentNumber, studentCard, svg, dataFields, calendarGrid) {
+            // Add your database/API call here:
+            // fetch(`/api/students/${studentNumber}/refresh`)
+            //     .then(response => response.json())
+            //     .then(data => updateStudentCard(data, dataFields, calendarGrid, svg))
+            //     .catch(error => handleRefreshError(error, svg, dataFields));
+
+            // Temporary - remove this when you add your API call
+            setTimeout(() => {
+                svg.style.animation = '';
+                console.log(`Ready to refresh Student #${studentNumber}`);
+            }, 1000);
+        }
+
+        // Function to update student card with fresh data from database
+        function updateStudentCard(data, dataFields, calendarGrid, svg) {
+            svg.style.animation = '';
+
+            // Update data fields - Expected: { name, schoolId, monthlyAttendance, overallAttendance, attendanceCalendar }
+            dataFields[0].textContent = data.name || 'N/A';
+            dataFields[0].classList.remove('loading-shimmer');
+
+            dataFields[1].textContent = data.schoolId || 'N/A';
+            dataFields[1].classList.remove('loading-shimmer');
+
+            dataFields[2].textContent = data.monthlyAttendance || 'N/A';
+            dataFields[2].classList.remove('loading-shimmer');
+
+            dataFields[3].textContent = data.overallAttendance || 'N/A';
+            dataFields[3].classList.remove('loading-shimmer');
+
+            // Update calendar with attendance data (array of booleans)
+            if (data.attendanceCalendar && Array.isArray(data.attendanceCalendar)) {
+                const days = getDaysInMonth(currentMonth, currentYear);
+                let calendarHTML = '';
+
+                for (let day = 1; day <= days; day++) {
+                    const isPresent = data.attendanceCalendar[day - 1] === true;
+                    const dayClass = isPresent ? 'day-present' : 'day-absent';
+                    const status = isPresent ? 'Present' : 'Absent';
+
+                    calendarHTML += `
+                        <div class="day-block ${dayClass}" title="Day ${day}: ${status}">
+                            <span class="text-xs">${day}</span>
+                        </div>
+                    `;
+                }
+                calendarGrid.innerHTML = calendarHTML;
+            }
+
+            // Success feedback
+            svg.style.color = '#10b981';
+            setTimeout(() => svg.style.color = '', 1000);
+        }
+
+        // Function to handle refresh errors
+        function handleRefreshError(error, svg, dataFields) {
+            console.error('Error refreshing student data:', error);
+            svg.style.animation = '';
+            dataFields.forEach(field => {
+                field.textContent = 'Error loading';
+                field.classList.remove('loading-shimmer');
+            });
+        }
+    </script>
+</body>
+
+</html>
