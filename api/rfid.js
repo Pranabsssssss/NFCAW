@@ -1,29 +1,22 @@
-import { promises as fs } from "fs";
-import path from "path";
+import fetch from "node-fetch";
 
-const attendancePath = path.resolve("./attendance.csv");
+const SHEETDB_API_URL = "https://sheetdb.io/api/v1/lilfcdohr7mxa";
 
 function getISTTimestamp() {
     const now = new Date();
-    const istTime = now.toLocaleString("en-IN", {
+    return now.toLocaleString("en-IN", {
         timeZone: "Asia/Kolkata",
-        year: "numeric",
-        month: "2-digit",
-        day: "2-digit",
-        hour: "2-digit",
-        minute: "2-digit",
         hour12: false,
     });
-    return istTime.replace(/\//g, "-").replace(",", "");
 }
 
-function getISTDate() {
+function getISTDateKey() {
     const now = new Date();
     const istDate = now.toLocaleDateString("en-IN", {
         timeZone: "Asia/Kolkata",
         day: "numeric",
     });
-    return parseInt(istDate, 10);
+    return istDate.toString(); // Ensure your Google Sheet headers for days match this format
 }
 
 export default async function handler(req, res) {
@@ -38,53 +31,57 @@ export default async function handler(req, res) {
     }
 
     try {
-        let csvText = await fs.readFile(attendancePath, "utf8");
-        const lines = csvText.split("\n").filter(Boolean);
-        if (!lines.length) {
-            return res.status(500).json({ error: "Attendance CSV is empty" });
+        // 1. Query SheetDB for the record by RFID UID
+        const queryUrl = `${SHEETDB_API_URL}?RFID%20UID=${encodeURIComponent(rfidKey.trim())}`;
+        const getResponse = await fetch(queryUrl);
+        if (!getResponse.ok) {
+            return res.status(500).json({ error: "Failed to query SheetDB" });
+        }
+        const records = await getResponse.json();
+
+        if (!records.length) {
+            return res.status(404).json({ error: "RFID UID not found in attendance sheet" });
         }
 
-        // Parse header and find columns
-        const header = lines[0].split(",").map((col) => col.trim());
-        const rfidColIdx = header.indexOf("RFID UID");
-        const currentDay = getISTDate();
+        const record = records[0]; // Assuming RFID UID is unique
+        const dayKey = getISTDateKey();
 
-        if (rfidColIdx === -1) {
-            return res.status(500).json({ error: "RFID UID column missing in CSV" });
-        }
-
-        // Find day column index
-        let dayColIdx = -1;
-        for (let i = 0; i < header.length; i++) {
-            if (header[i] === currentDay.toString()) {
-                dayColIdx = i;
-                break;
-            }
-        }
-        if (dayColIdx === -1) {
-            return res.status(500).json({ error: `Day column '${currentDay}' not found in CSV` });
+        if (record[dayKey] && record[dayKey].trim() !== "") {
+            return res.status(409).json({
+                error: "Attendance already marked for today",
+                previousTimestamp: record[dayKey],
+                day: dayKey,
+            });
         }
 
-        // Find row for the RFID key
-        let found = false;
-        for (let i = 1; i < lines.length; i++) {
-            const row = lines[i].split(",").map((col) => col.trim());
-            if (row[rfidColIdx] === rfidKey.trim()) {
-                found = true;
-                if (row[dayColIdx] && row[dayColIdx] !== "") {
-                    return res.status(409).json({ error: "Attendance already marked for today", previousTimestamp: row[dayColIdx], day: currentDay });
-                }
-                // Mark attendance with timestamp
-                row[dayColIdx] = getISTTimestamp();
-                lines[i] = row.join(",");
-                // Save updated CSV
-                await fs.writeFile(attendancePath, lines.join("\n") + "\n", "utf8");
-                return res.status(201).json({ success: true, message: "Attendance marked successfully", rfidKey: rfidKey.trim(), timestamp: row[dayColIdx], day: currentDay });
-            }
+        // 2. Update the attendance for today with current timestamp
+        const timestamp = getISTTimestamp();
+        const rowId = record._id;
+
+        const updateResponse = await fetch(`${SHEETDB_API_URL}/${rowId}`, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                data: {
+                    [dayKey]: timestamp,
+                },
+            }),
+        });
+
+        if (!updateResponse.ok) {
+            const errorText = await updateResponse.text();
+            return res.status(500).json({ error: "Failed to update attendance", details: errorText });
         }
-        if (!found) {
-            return res.status(404).json({ error: "RFID UID not found in attendance list" });
-        }
+
+        return res.status(201).json({
+            success: true,
+            message: "Attendance marked successfully",
+            rfidKey: rfidKey.trim(),
+            timestamp,
+            day: dayKey,
+        });
     } catch (error) {
         return res.status(500).json({ error: "Server error", details: error.message });
     }
