@@ -1,9 +1,0 @@
-📦NFCAW
- ┣ 📂rfid
- ┃ ┣ 📜index.html
- ┃ ┗ 📜script.js
- ┣ 📜attendance.csv
- ┣ 📜index.html
- ┣ 📜package.json
- ┣ 📜README.md
- ┗ 📜script.js
