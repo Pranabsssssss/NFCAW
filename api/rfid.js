@@ -1,22 +1,11 @@
-import fetch from "node-fetch";
-
 const SHEETDB_API_URL = "https://sheetdb.io/api/v1/lilfcdohr7mxa";
 
 function getISTTimestamp() {
-    const now = new Date();
-    return now.toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        hour12: false,
-    });
+    return new Date().toLocaleString("en-IN", { timeZone: "Asia/Kolkata", hour12: false });
 }
 
 function getISTDateKey() {
-    const now = new Date();
-    const istDate = now.toLocaleDateString("en-IN", {
-        timeZone: "Asia/Kolkata",
-        day: "numeric",
-    });
-    return istDate.toString(); // Ensure your Google Sheet headers for days match this format
+    return new Date().toLocaleDateString("en-IN", { timeZone: "Asia/Kolkata", day: "numeric" }).toString();
 }
 
 export default async function handler(req, res) {
@@ -31,48 +20,42 @@ export default async function handler(req, res) {
     }
 
     try {
-        // 1. Query SheetDB for the record by RFID UID
+        // Query SheetDB for the student record
         const queryUrl = `${SHEETDB_API_URL}?RFID%20UID=${encodeURIComponent(rfidKey.trim())}`;
-        const getResponse = await fetch(queryUrl);
-        if (!getResponse.ok) {
+        const queryResponse = await fetch(queryUrl);
+        if (!queryResponse.ok) {
             return res.status(500).json({ error: "Failed to query SheetDB" });
         }
-        const records = await getResponse.json();
+        const records = await queryResponse.json();
 
         if (!records.length) {
-            return res.status(404).json({ error: "RFID UID not found in attendance sheet" });
+            return res.status(404).json({ error: "RFID UID not found in SheetDB" });
         }
 
-        const record = records[0]; // Assuming RFID UID is unique
+        const record = records[0]; // Unique RFID assumed
         const dayKey = getISTDateKey();
 
         if (record[dayKey] && record[dayKey].trim() !== "") {
             return res.status(409).json({
-                error: "Attendance already marked for today",
+                error: "Attendance already marked",
                 previousTimestamp: record[dayKey],
                 day: dayKey,
             });
         }
 
-        // 2. Update the attendance for today with current timestamp
+        // Update record with attendance timestamp
         const timestamp = getISTTimestamp();
         const rowId = record._id;
 
         const updateResponse = await fetch(`${SHEETDB_API_URL}/${rowId}`, {
             method: "PUT",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-                data: {
-                    [dayKey]: timestamp,
-                },
-            }),
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ data: {
+                    [dayKey]: timestamp } }),
         });
-
         if (!updateResponse.ok) {
-            const errorText = await updateResponse.text();
-            return res.status(500).json({ error: "Failed to update attendance", details: errorText });
+            const text = await updateResponse.text();
+            return res.status(500).json({ error: "Failed to update attendance", details: text });
         }
 
         return res.status(201).json({
