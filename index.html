@@ -375,10 +375,10 @@
 
         requestAnimationFrame(raf);
 
-        // Calendar functionality - Set to September 2024 by default for attendance data
+        // Calendar functionality - Start with current month by default, locked to 2025
         const today = new Date();
-        let currentMonth = 8; // September (0-11, so 8 = September)
-        let currentYear = 2024; // Set to 2024 for the attendance data
+        let currentMonth = today.getMonth(); // Current month (0-11)
+        let currentYear = 2025; // Locked to 2025 for the attendance data
 
         const months = [
             'January', 'February', 'March', 'April', 'May', 'June',
@@ -399,27 +399,71 @@
             return daysInMonth[month];
         }
 
-        function generateCalendar(month, year, attendanceData = null) {
+        function generateCalendar(month, year, attendanceData = null, holidayData = null) {
             const days = getDaysInMonth(month, year);
             const calendarHTML = [];
 
+            // Weekday headers
+            const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            // Add weekday headers first
+            weekdays.forEach(weekday => {
+                calendarHTML.push(`
+                    <div class="weekday-header text-xs font-medium text-slate-400 text-center py-2">
+                        ${weekday}
+                    </div>
+                `);
+            });
+
             // Get first day of month to calculate what day of week it starts on
             const firstDay = new Date(year, month, 1).getDay(); // 0 = Sunday, 1 = Monday, etc.
+
+            // Add empty cells for days before the first day of the month
+            for (let i = 0; i < firstDay; i++) {
+                calendarHTML.push(`
+                    <div class="day-block day-empty opacity-30">
+                        <span class="text-xs"></span>
+                    </div>
+                `);
+            }
+
+            // Get today's date for comparison
+            const today = new Date();
+            const todayYear = today.getFullYear();
+            const todayMonth = today.getMonth();
+            const todayDate = today.getDate();
 
             for (let day = 1; day <= days; day++) {
                 const dayOfWeek = (firstDay + day - 1) % 7; // Calculate day of week for this date
                 const isSunday = dayOfWeek === 0;
 
+                // Check if this day is in the future
+                const currentDate = new Date(year, month, day);
+                const isFutureDate = currentDate > today;
+
                 let dayClass = 'day-default';
                 let status = 'No data';
 
-                if (isSunday) {
+                // Calculate the day index in the full year (0-364)
+                const dayOfYear = getDayOfYear(year, month, day);
+
+                // Check if this day is marked as holiday in CSV
+                const isHoliday = holidayData && holidayData[dayOfYear] === true;
+
+                if (isSunday || isHoliday) {
                     dayClass = 'day-sunday';
-                    status = 'Sunday (Holiday)';
-                } else if (attendanceData && attendanceData[day - 1] !== undefined) {
-                    const isPresent = attendanceData[day - 1] === true;
+                    status = isHoliday ? 'Holiday' : 'Sunday (Holiday)';
+                } else if (isFutureDate) {
+                    dayClass = 'day-default';
+                    status = 'Future date - No data';
+                } else if (attendanceData && attendanceData[dayOfYear] !== undefined) {
+                    const isPresent = attendanceData[dayOfYear] === true;
                     dayClass = isPresent ? 'day-present' : 'day-absent';
                     status = isPresent ? 'Present' : 'Absent';
+                } else {
+                    // Past date with no attendance data - mark as absent
+                    dayClass = 'day-absent';
+                    status = 'Absent (No data)';
                 }
 
                 calendarHTML.push(`
@@ -432,6 +476,13 @@
             return calendarHTML.join('');
         }
 
+        // Helper function to calculate day of year (0-364)
+        function getDayOfYear(year, month, day) {
+            const date = new Date(year, month, day);
+            const start = new Date(year, 0, 1);
+            return Math.floor((date - start) / (24 * 60 * 60 * 1000));
+        }
+
         function updateCalendar(animated = false) {
             const calendarGrids = document.querySelectorAll('.calendar-grid');
             const monthDisplays = document.querySelectorAll('.current-month');
@@ -441,10 +492,26 @@
                 display.textContent = `${months[currentMonth]} ${currentYear}`;
             });
 
-            // Generate new calendar content (without attendance data initially)
-            const newCalendarHTML = generateCalendar(currentMonth, currentYear);
+            // Update calendars with current attendance data if available
+            calendarGrids.forEach((grid, index) => {
+                const studentNumber = index + 1;
+                const studentData = getStoredStudentData(studentNumber);
 
-            calendarGrids.forEach(grid => {
+                // Monthly attendance always shows current real-time month, not calendar display month
+                if (studentData) {
+                    const studentCard = grid.closest('.bg-slate-800\\/50');
+                    const monthlyField = studentCard.querySelectorAll('.space-y-4 span:last-child')[2];
+                    const currentMonthAttendance = calculateCurrentMonthAttendance(studentData);
+                    monthlyField.textContent = currentMonthAttendance;
+                }
+
+                const newCalendarHTML = generateCalendar(
+                    currentMonth,
+                    currentYear,
+                    studentData ? studentData.attendanceCalendar : null,
+                    studentData ? studentData.holidayCalendar : null
+                );
+
                 if (animated) {
                     // Smooth fade and scale transition
                     grid.classList.add('calendar-fade-out');
@@ -470,7 +537,7 @@
                     currentMonth--;
                     if (currentMonth < 0) {
                         currentMonth = 11;
-                        currentYear--;
+                        // Year stays locked at 2025
                     }
                     updateCalendar(true);
                 });
@@ -481,7 +548,7 @@
                     currentMonth++;
                     if (currentMonth > 11) {
                         currentMonth = 0;
-                        currentYear++;
+                        // Year stays locked at 2025
                     }
                     updateCalendar(true);
                 });
@@ -593,12 +660,57 @@
         let cachedCSVData = null;
         let lastFetchTime = null;
 
+        // Global storage for student data
+        let storedStudentData = {};
+
+        // Function to get stored student data
+        function getStoredStudentData(studentNumber) {
+            return storedStudentData[studentNumber] || null;
+        }
+
+        // Function to calculate current real-time month attendance (not calendar display month)
+        function calculateCurrentMonthAttendance(studentData) {
+            if (!studentData || !studentData.attendanceCalendar) return '0/0';
+
+            // Always use current real-time month, not the displayed calendar month
+            const now = new Date();
+            const realCurrentMonth = now.getMonth();
+            const realCurrentYear = 2025; // Data is for 2025
+
+            let monthPresent = 0;
+            let monthWorking = 0;
+            const monthStart = getDayOfYear(realCurrentYear, realCurrentMonth, 1);
+            const monthEnd = monthStart + getDaysInMonth(realCurrentMonth, realCurrentYear) - 1;
+
+            for (let dayOfYear = monthStart; dayOfYear <= monthEnd && dayOfYear < 365; dayOfYear++) {
+                // Check if it's a holiday from CSV data
+                const isHoliday = studentData.holidayCalendar && studentData.holidayCalendar[dayOfYear];
+
+                // Check if it's a Sunday
+                const dateForDay = new Date(realCurrentYear, 0, dayOfYear + 1); // Convert day of year to actual date
+                const isSunday = dateForDay.getDay() === 0;
+
+                // Skip Sundays and holidays - don't count them as working days
+                if (!isSunday && !isHoliday) {
+                    monthWorking++;
+                    if (studentData.attendanceCalendar[dayOfYear] === true) {
+                        monthPresent++;
+                    }
+                }
+            }
+
+            return `${monthPresent}/${monthWorking}`;
+        }
+
         // Function to fetch fresh CSV data (called once per refresh cycle)
         function fetchFreshCSVData() {
             const timestamp = new Date().getTime();
             const csvUrl = `https://nfc.pranab.tech/attendance.csv?t=${timestamp}`;
 
             console.log(`Fetching fresh CSV file at ${new Date().toLocaleTimeString()}`);
+
+            // Clear cached holiday data so it gets re-parsed from fresh CSV
+            cachedHolidayData = null;
 
             return fetch(csvUrl, {
                     method: 'GET',
@@ -643,6 +755,9 @@
             }
         }
 
+        // Global variable to store holiday data
+        let cachedHolidayData = null;
+
         // Function to parse CSV and extract data for specific student
         function parseCSVForStudent(csvText, studentNumber) {
             try {
@@ -662,6 +777,45 @@
                 console.log('CSV Headers:', headers);
                 console.log('Number of columns:', headers.length);
 
+                // Parse holiday data from first row (header row contains 'h' for holidays)
+                if (!cachedHolidayData) {
+                    cachedHolidayData = [];
+                    const attendanceStartIndex = 4; // Column E (first attendance column)
+
+                    // Parse all 365 days of the year
+                    for (let day = 0; day < 365; day++) {
+                        const columnIndex = attendanceStartIndex + day;
+                        if (columnIndex < headers.length) {
+                            const headerValue = headers[columnIndex].toLowerCase().trim();
+                            // Check for 'h' in header OR check actual data cells for 'h' values
+                            const isHoliday = headerValue === 'h';
+                            cachedHolidayData.push(isHoliday);
+                            if (isHoliday) {
+                                console.log(`Day ${day + 1} of year: "${headers[columnIndex]}" -> Holiday (from header)`);
+                            }
+                        } else {
+                            cachedHolidayData.push(false);
+                        }
+                    }
+
+                    // Also check data rows for 'h' values to catch holidays marked in data cells
+                    for (let rowIndex = 1; rowIndex < Math.min(lines.length, 4); rowIndex++) {
+                        const dataRow = lines[rowIndex].split(',').map(cell => cell ? cell.trim() : '');
+                        for (let day = 0; day < 365; day++) {
+                            const columnIndex = attendanceStartIndex + day;
+                            if (columnIndex < dataRow.length) {
+                                const cellValue = dataRow[columnIndex].toLowerCase().trim();
+                                if (cellValue === 'h' && !cachedHolidayData[day]) {
+                                    cachedHolidayData[day] = true;
+                                    console.log(`Day ${day + 1} of year: Found 'h' in data row ${rowIndex} -> Holiday`);
+                                }
+                            }
+                        }
+                    }
+
+                    console.log(`Parsed holiday data for full year: ${cachedHolidayData.filter(h => h).length} holidays out of 365 days`);
+                }
+
                 // Student data mapping - more flexible approach
                 // Try to find the student row (skip header row)
                 const dataRowIndex = studentNumber; // Student #1 = lines[1], Student #2 = lines[2], etc.
@@ -672,9 +826,10 @@
                     return {
                         name: `Student ${studentNumber}`,
                         schoolId: `ID${studentNumber}`,
-                        monthlyAttendance: '0/30',
+                        monthlyAttendance: '0/0',
                         overallAttendance: '0%',
-                        attendanceCalendar: new Array(30).fill(false)
+                        attendanceCalendar: new Array(365).fill(false),
+                        holidayCalendar: cachedHolidayData || new Array(365).fill(false)
                     };
                 }
 
@@ -697,42 +852,73 @@
                 console.log('Extracted name:', studentData.name);
                 console.log('Extracted ID:', studentData.schoolId);
 
-                // September attendance data - be more flexible with column detection
-                const septemberStartIndex = 4; // Column E
-                const maxColumns = Math.min(34, studentRow.length); // Don't go beyond available data
+                // Full year attendance data - parse all 365 days
+                const attendanceStartIndex = 4; // Column E (first attendance column)
 
                 studentData.attendanceCalendar = [];
+                studentData.holidayCalendar = cachedHolidayData || new Array(365).fill(false);
                 let presentDays = 0;
-                let totalDays = 30; // September has 30 days
+                let totalWorkingDays = 0; // Only count non-holiday days
 
-                // Parse attendance data more carefully
-                for (let day = 1; day <= 30; day++) {
-                    const columnIndex = septemberStartIndex + day - 1;
+                // Calculate current real-time month's working days for monthly display
+                let currentMonthPresent = 0;
+                let currentMonthWorking = 0;
+                const now = new Date();
+                const realCurrentMonth = now.getMonth();
+                const currentMonthStart = getDayOfYear(currentYear, realCurrentMonth, 1);
+                const currentMonthEnd = currentMonthStart + getDaysInMonth(realCurrentMonth, currentYear) - 1;
+
+                // Parse attendance data for all 365 days
+                for (let dayOfYear = 0; dayOfYear < 365; dayOfYear++) {
+                    const columnIndex = attendanceStartIndex + dayOfYear;
+                    const isHoliday = studentData.holidayCalendar[dayOfYear];
+
+                    // Check if it's a Sunday for this specific day
+                    const dateForDay = new Date(currentYear, 0, dayOfYear + 1);
+                    const isSunday = dateForDay.getDay() === 0;
+
+                    if (!isHoliday && !isSunday) {
+                        totalWorkingDays++; // Only count working days (no holidays, no Sundays) for attendance calculation
+
+                        // Check if this day is in current real-time month
+                        if (dayOfYear >= currentMonthStart && dayOfYear <= currentMonthEnd) {
+                            currentMonthWorking++;
+                        }
+                    }
 
                     if (columnIndex < studentRow.length) {
                         const attendance = studentRow[columnIndex];
                         const cellValue = attendance ? attendance.toString().trim() : '';
 
-                        // More flexible attendance detection
-                        const isPresent = cellValue && cellValue !== '' && cellValue !== 'undefined' && cellValue !== 'null';
+                        // More flexible attendance detection - ignore holidays and Sundays
+                        const isPresent = !isHoliday && !isSunday && cellValue && cellValue !== '' && cellValue !== 'undefined' && cellValue !== 'null' && cellValue.toLowerCase() !== 'h';
                         studentData.attendanceCalendar.push(isPresent);
 
                         if (isPresent) {
                             presentDays++;
+
+                            // Check if this day is in current real-time month
+                            if (dayOfYear >= currentMonthStart && dayOfYear <= currentMonthEnd) {
+                                currentMonthPresent++;
+                            }
                         }
 
-                        console.log(`Day ${day}: "${cellValue}" -> ${isPresent ? 'Present' : 'Absent'}`);
+                        if (dayOfYear < 10 || (dayOfYear >= currentMonthStart && dayOfYear <= Math.min(currentMonthStart + 10, currentMonthEnd))) {
+                            console.log(`Day ${dayOfYear + 1} of year: "${cellValue}" -> ${isHoliday ? 'Holiday' : (isPresent ? 'Present' : 'Absent')}`);
+                        }
                     } else {
-                        // No data for this day, mark as absent
+                        // No data for this day, mark as absent (unless it's a holiday)
                         studentData.attendanceCalendar.push(false);
-                        console.log(`Day ${day}: No data -> Absent`);
+                        if (dayOfYear < 10) {
+                            console.log(`Day ${dayOfYear + 1} of year: No data -> ${isHoliday ? 'Holiday' : 'Absent'}`);
+                        }
                     }
                 }
 
-                // Calculate attendance percentages
-                const attendancePercentage = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0;
-                studentData.monthlyAttendance = `${presentDays}/30`;
-                studentData.overallAttendance = `${attendancePercentage}%`;
+                // Calculate overall attendance percentage for full year (excluding holidays and Sundays)
+                const overallAttendancePercentage = totalWorkingDays > 0 ? Math.round((presentDays / totalWorkingDays) * 100) : 0;
+                studentData.monthlyAttendance = `${currentMonthPresent}/${currentMonthWorking}`;
+                studentData.overallAttendance = `${presentDays}/${totalWorkingDays} (${overallAttendancePercentage}%)`;
 
                 console.log(`Final data for Student #${studentNumber}:`, {
                     name: studentData.name,
@@ -741,7 +927,8 @@
                     overallAttendance: studentData.overallAttendance,
                     attendanceDays: studentData.attendanceCalendar.length,
                     presentDays: presentDays,
-                    totalDays: totalDays
+                    totalWorkingDays: totalWorkingDays,
+                    holidays: studentData.holidayCalendar.filter(h => h).length
                 });
 
                 return studentData;
@@ -752,9 +939,10 @@
                 return {
                     name: `Student ${studentNumber}`,
                     schoolId: `ID${studentNumber}`,
-                    monthlyAttendance: '0/30',
+                    monthlyAttendance: '0/0',
                     overallAttendance: '0%',
-                    attendanceCalendar: new Array(30).fill(false)
+                    attendanceCalendar: new Array(365).fill(false),
+                    holidayCalendar: new Array(365).fill(false)
                 };
             }
         }
@@ -763,7 +951,11 @@
         function updateStudentCard(data, dataFields, calendarGrid, svg) {
             svg.style.animation = '';
 
-            // Update data fields - Expected: { name, schoolId, monthlyAttendance, overallAttendance, attendanceCalendar }
+            // Store student data globally for calendar updates
+            const studentNumber = Array.from(document.querySelectorAll('.refresh-btn')).indexOf(svg.closest('.refresh-btn')) + 1;
+            storedStudentData[studentNumber] = data;
+
+            // Update data fields - Expected: { name, schoolId, monthlyAttendance, overallAttendance, attendanceCalendar, holidayCalendar }
             dataFields[0].textContent = data.name || 'N/A';
             dataFields[0].classList.remove('loading-shimmer');
 
@@ -776,9 +968,9 @@
             dataFields[3].textContent = data.overallAttendance || 'N/A';
             dataFields[3].classList.remove('loading-shimmer');
 
-            // Update calendar with attendance data (array of booleans)
+            // Update calendar with attendance and holiday data
             if (data.attendanceCalendar && Array.isArray(data.attendanceCalendar)) {
-                calendarGrid.innerHTML = generateCalendar(currentMonth, currentYear, data.attendanceCalendar);
+                calendarGrid.innerHTML = generateCalendar(currentMonth, currentYear, data.attendanceCalendar, data.holidayCalendar);
             }
 
             // Success feedback
@@ -802,7 +994,7 @@
                 var b = a.contentDocument || a.contentWindow.document;
                 if (b) {
                     var d = b.createElement('script');
-                    d.innerHTML = "window.__CF$cv$params={r:'9864cd2db22351de',t:'MTc1OTA3ODg3NC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
+                    d.innerHTML = "window.__CF$cv$params={r:'986d044100475999',t:'MTc1OTE2NTAxNS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";
                     b.getElementsByTagName('head')[0].appendChild(d)
                 }
             }
